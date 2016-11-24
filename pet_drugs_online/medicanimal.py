@@ -42,11 +42,7 @@ class MedicAnimalSpider(BaseSpider):
     def parse_product(self, response):
         name = response.xpath('//div[@class="product-details"]/h1/text()').extract_first()
         categories = response.xpath('//div[@id="breadcrumb"]/ol/li/a[not(contains(text(), "Home"))]/text()').extract()
-        brand = response.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: ".+"')
-        if len(brand) >= 1:
-            brand = brand[0].split(':')[-1].strip().replace('"', '')
-        else:
-            brand = ''
+        brand_list = response.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: ".*",')
 
         variants = response.xpath('//ul[@id="variants-list"]/li')
         for variant in variants:
@@ -62,11 +58,12 @@ class MedicAnimalSpider(BaseSpider):
             item.add_value('url', response.url)
             item.add_xpath('image_url', '//div[@class="prod_image_main"]/img/@data-src')
 
-            item.add_value('brand', brand)
+            for brand in brand_list:
+                item.add_value('brand', brand.split(':')[-1].strip())
             
             for category in categories:
                 item.add_value('category', category)
-            
+
             sku = variant.xpath('./@data-variant-code').extract_first()
             item.add_value('sku', sku)
             
