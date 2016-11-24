@@ -42,7 +42,7 @@ class MedicAnimalSpider(BaseSpider):
     def parse_product(self, response):
         name = response.xpath('//div[@class="product-details"]/h1/text()').extract_first()
         categories = response.xpath('//div[@id="breadcrumb"]/ol/li/a[not(contains(text(), "Home"))]/text()').extract()
-        brand = response.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: "[\w ]+"')
+        brand = response.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: ".+"')
         if len(brand) >= 1:
             brand = brand[0].split(':')[-1].strip().replace('"', '')
         else:
