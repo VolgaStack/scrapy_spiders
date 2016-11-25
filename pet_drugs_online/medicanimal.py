@@ -8,11 +8,14 @@ import os
 from urlparse import urljoin
 
 from product_spiders.items import Product, ProductLoaderWithNameStrip as ProductLoader
+from product_spiders.phantomjs import PhantomJS
 from product_spiders.utils import extract_price
-
+from scrapy import signals
 from scrapy.http import Request
-from scrapy.spider import BaseSpider
+from scrapy.selector import Selector
+from scrapy.spiders import BaseSpider
 from scrapy.utils.response import get_base_url
+from scrapy.xlib.pydispatch import dispatcher
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 SHIPPING_PRICE = 2.99
@@ -22,6 +25,14 @@ class MedicAnimalSpider(BaseSpider):
     name = 'medicanimal.com'
     allowed_domains = ['medicanimal.com']
     start_urls = ('https://www.medicanimal.com/',)
+
+    def __init__(self, *args, **kwargs):
+        super(MedicAnimalSpider, self).__init__(*args, **kwargs)
+        dispatcher.connect(self.spider_closed, signals.spider_closed)
+        self.browser = PhantomJS.create_browser()
+
+    def spider_closed(self):
+        self.browser.close()
 
     def parse(self, response):
         base_url = get_base_url(response)
@@ -44,6 +55,12 @@ class MedicAnimalSpider(BaseSpider):
         categories = response.xpath('//div[@id="breadcrumb"]/ol/li/a[not(contains(text(), "Home"))]/text()').extract()
         brand_list = response.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: ".*",')
 
+        # call for phantomjs only if we were not able to get brandlist from standart response
+        if not brand_list:
+            self.browser.get(response.url)
+            sel = Selector(text=self.browser.page_source)
+            brand_list = sel.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: ".*",')
+
         variants = response.xpath('//ul[@id="variants-list"]/li')
         for variant in variants:
             item = ProductLoader(response=response, item=Product())
@@ -59,7 +76,8 @@ class MedicAnimalSpider(BaseSpider):
             item.add_xpath('image_url', '//div[@class="prod_image_main"]/img/@data-src')
 
             for brand in brand_list:
-                item.add_value('brand', brand.split(':')[-1].strip())
+                # manufacturer: "Royal canin",
+                item.add_value('brand', brand.split(':')[-1].strip()[1:-1])
             
             for category in categories:
                 item.add_value('category', category)
