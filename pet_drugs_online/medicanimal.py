@@ -54,6 +54,7 @@ class MedicAnimalSpider(BaseSpider):
         name = response.xpath('//div[@class="product-details"]/h1/text()').extract_first()
         categories = response.xpath('//div[@id="breadcrumb"]/ol/li/a[not(contains(text(), "Home"))]/text()').extract()
         brand_list = response.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: ".*",')
+        product_id = response.url.split('/')[-1]
 
         # call for phantomjs only if we were not able to get brandlist from standart response
         if not brand_list:
@@ -62,7 +63,8 @@ class MedicAnimalSpider(BaseSpider):
             brand_list = sel.xpath('//head/script[@type="text/javascript"]').re(r'manufacturer: ".*",')
 
         variants = response.xpath('//ul[@id="variants-list"]/li')
-        for variant in variants:
+        variants_generator = (variant for variant in variants if int(variant.xpath('./@data-scale-value').extract_first()) == 1)
+        for variant in variants_generator:
             item = ProductLoader(response=response, item=Product())
 
             variant_name = variant.xpath('./span[@class="variant-list-name"]/text()').extract_first()
@@ -85,7 +87,7 @@ class MedicAnimalSpider(BaseSpider):
             sku = variant.xpath('./@data-variant-code').extract_first()
             item.add_value('sku', sku)
             
-            item.add_value('identifier', sku)
+            item.add_value('identifier', product_id + '-' + sku)
             
             out_of_stock = variant.xpath('.//span[@class="variant-info"]/span[@class="variant-stockstatus"]')
             if out_of_stock:
