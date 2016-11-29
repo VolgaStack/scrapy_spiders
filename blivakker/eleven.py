@@ -67,6 +67,7 @@ class ElevenSpider(BaseSpider):
         else:
             for option_id in response.xpath('//div[@id="pr-alt"]//div[contains(@class, "pr-alt-item")]/@data-id').extract():
                 self.browser.get(response.url + '#{0}'.format(option_id))
+                variant_selector = Selector(text=self.browser.page_source)
                 # TODO: add url to variant_selector
                 item = self.create_single_product(variant_selector)
                 products.append(item)
