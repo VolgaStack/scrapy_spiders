@@ -14,7 +14,8 @@ from scrapy.spiders import BaseSpider
 from scrapy.utils.response import get_base_url
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-SHIPPING_PRICE = 120
+FREE_SHIPPING = 1000 / 10
+SHIPPING_PRICE = 120 / 10
 IN_STOCK_MSG = u'in_stock'
 
 
@@ -25,6 +26,9 @@ class ElevenSpider(BaseSpider):
 
     def parse(self, response):
         base_url = get_base_url(response)
+        eur = response.xpath('//ul[@id="drop-down-currency"]/li[@data-value="EUR"]/@data-url').extract_first()
+        yield Request(urljoin(base_url, eur), callback=self.parse)
+
         categories = response.xpath(
             '//div[@id="main-menu-wrapper"]/nav/ul/li/a[not(contains(text(), "BRANDS"))]/@href').extract()
         for category in categories:
@@ -135,7 +139,7 @@ class ElevenSpider(BaseSpider):
                 option_price = product.get('price', '')
                 item.add_value('price', option_price if option_price else price)
 
-                if price >= 1000:
+                if price >= FREE_SHIPPING:
                     item.add_value('shipping_cost', 0)
                 else:
                     item.add_value('shipping_cost', SHIPPING_PRICE)
