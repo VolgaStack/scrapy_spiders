@@ -91,7 +91,7 @@ class ElevenSpider(BaseSpider):
                                     'sku': option[u'sProductNumber'],
                                     'image': option.get(u'sImgBigUrl', ''),
                                     'name': products_data['subProductTitles'][index],
-                                    'price': products_data['productPricesInclVat'][index],
+                                    'price': option[u'sPriceEach'],
                                     'barcode': products_data['productBarcodes'][index],
                                     }
                             if IN_STOCK_MSG in option[u'sStockXhtml']:
