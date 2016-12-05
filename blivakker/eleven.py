@@ -139,6 +139,7 @@ class ElevenSpider(BaseSpider):
                 option_price = product.get('price', '')
                 item.add_value('price', option_price if option_price else price)
 
+                price = float(option_price if option_price else price)
                 if price >= FREE_SHIPPING:
                     item.add_value('shipping_cost', 0)
                 else:
